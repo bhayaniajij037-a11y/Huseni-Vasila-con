@@ -22,7 +22,15 @@ jobs:
 
       - name: Extract project
         run: |
+          rm -rf project
+          mkdir project
           unzip -o HUSENI_VASILA_Final_Starter.zip -d project
+
+      - name: Create fresh Flutter Android project
+        run: |
+          cd project
+          rm -rf android
+          flutter create --platforms=android .
 
       - name: Get dependencies
         working-directory: project
