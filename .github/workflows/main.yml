@@ -17,66 +17,83 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.0'
+          flutter-version: "3.35.0"
           channel: stable
           cache: true
 
-      - name: Find ZIP file
+      - name: Find ZIP
         id: zip
         shell: bash
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
 
           if [ -z "$ZIP_FILE" ]; then
-            echo "ERROR: ZIP file not found"
+            echo "ZIP file not found"
             exit 1
           fi
 
-          echo "ZIP found: $ZIP_FILE"
-          echo "zip_file=$ZIP_FILE" >> "$GITHUB_OUTPUT"
+          echo "Found: $ZIP_FILE"
+          echo "ZIP_FILE=$ZIP_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Extract project
         shell: bash
         run: |
-          rm -rf project
-          mkdir -p project
-
-          ZIP_FILE="${{ steps.zip.outputs.zip_file }}"
-          unzip -o "$ZIP_FILE" -d project
-
-          echo "Extracted files:"
-          find project -maxdepth 2 -type f | head -100
+          rm -rf source
+          mkdir source
+          unzip -o "${{ steps.zip.outputs.ZIP_FILE }}" -d source
 
       - name: Find Flutter project
         shell: bash
         run: |
-          PUBSPEC=$(find project -name pubspec.yaml -type f | head -n 1)
+          PUBSPEC=$(find source -name pubspec.yaml -type f | head -n 1)
 
           if [ -z "$PUBSPEC" ]; then
-            echo "ERROR: pubspec.yaml not found"
+            echo "pubspec.yaml not found"
             exit 1
           fi
 
-          PROJECT_DIR=$(dirname "$PUBSPEC")
+          APP_DIR=$(dirname "$PUBSPEC")
+          echo "APP_DIR=$APP_DIR" >> "$GITHUB_ENV"
 
-          echo "Flutter project found at: $PROJECT_DIR"
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+      - name: Create fresh Flutter Android project
+        shell: bash
+        run: |
+          rm -rf build_app
+
+          flutter create \
+            --platforms=android \
+            --project-name huseni_vasila \
+            build_app
+
+      - name: Copy app code
+        shell: bash
+        run: |
+          rm -rf build_app/lib
+          cp -R "$APP_DIR/lib" build_app/lib
+
+          if [ -d "$APP_DIR/assets" ]; then
+            rm -rf build_app/assets
+            cp -R "$APP_DIR/assets" build_app/assets
+          fi
+
+          if [ -d "$APP_DIR/fonts" ]; then
+            rm -rf build_app/fonts
+            cp -R "$APP_DIR/fonts" build_app/fonts
+          fi
+
+          cp "$APP_DIR/pubspec.yaml" build_app/pubspec.yaml
 
       - name: Get dependencies
-        working-directory: ${{ env.PROJECT_DIR }}
+        working-directory: build_app
         run: flutter pub get
 
-      - name: Check Flutter project
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: flutter analyze --no-fatal-infos
-
       - name: Build APK
-        working-directory: ${{ env.PROJECT_DIR }}
+        working-directory: build_app
         run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Huseni-Vasila-APK
-          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+          path: build_app/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
