@@ -24,7 +24,7 @@ jobs:
         run: |
           rm -rf project
           mkdir project
-          unzip -o HUSENI_VASILA_Final_Starter.zip -d project
+          unzip -o HUSENI_VASILA_Final_Starter_FIXED.zip -d project
 
       - name: Create fresh Flutter Android project
         run: |
