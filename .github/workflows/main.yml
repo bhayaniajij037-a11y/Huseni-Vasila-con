@@ -21,10 +21,11 @@ jobs:
           channel: stable
 
       - name: Extract project
-        run: |
-          rm -rf project
-          mkdir project
-          unzip -o HUSENI_VASILA_Staff_Edit_FIXED.zip -d project
+  run: |
+    rm -rf project
+    ZIP_FILE=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
+    echo "Using ZIP: $ZIP_FILE"
+    unzip -o "$ZIP_FILE" -d project
 
       - name: Create fresh Flutter Android project
         run: |
